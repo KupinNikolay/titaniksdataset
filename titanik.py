@@ -1,127 +1,187 @@
-import io
-import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+# Импорт необходимых библиотек
+import io  # Для работы с вводом-выводом (понадобится для вывода информации о DataFrame)
+import streamlit as st  # Основная библиотека для создания веб-приложений
+import pandas as pd  # Для работы с табличными данными
+import matplotlib.pyplot as plt  # Для построения графиков
+import seaborn as sns  # Для улучшенной визуализации данных
 
-# Загрузка данных
-@st.cache_data
+# Функция загрузки данных с кэшированием
+@st.cache_data  # Декоратор для кэширования - данные загружаются только при первом запуске
 def load_data():
+    # URL датасета с пассажирами Титаника
     url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+    # Чтение CSV-файла из интернета в DataFrame
     return pd.read_csv(url)
 
+# Загружаем данные в переменную df
 df = load_data()
 
-# Создание возрастных групп
+# Функция для создания возрастных групп
 def create_age_groups(age):
-    if pd.isnull(age):
+    """Классифицирует возраст пассажиров по группам"""
+    if pd.isnull(age):  # Если возраст не указан (NaN)
         return 'Неизвестно'
-    elif age < 18:
+    elif age < 18:  # Дети до 18 лет
         return 'Дети (<18)'
-    elif 18 <= age < 30:
+    elif 18 <= age < 30:  # Молодые 18-29 лет
         return 'Молодые (18-29)'
-    elif 30 <= age < 50:
+    elif 30 <= age < 50:  # Взрослые 30-49 лет
         return 'Взрослые (30-49)'
-    else:
+    else:  # Пожилые 50+ лет
         return 'Пожилые (50+)'
 
-df['AgeGroup'] = df['Age'].apply(create_age_groups)
+# Создаем новый столбец с возрастными группами
+df['AgeGroup'] = df['Age'].apply(create_age_groups)  # Применяем функцию к каждому значению возраста
 
-# Функция для отображения информации о столбцах
+# Функция для отображения метаинформации о данных
 def display_column_info(df):
+    """Создает DataFrame с информацией о столбцах"""
     col_info = pd.DataFrame({
-        'Столбец': df.columns,
-        'Тип данных': df.dtypes.values,
-        'Уникальных значений': df.nunique().values,
-        'Пропусков': df.isnull().sum().values,
-        '% пропусков': (df.isnull().mean() * 100).round(2).values
+        'Столбец': df.columns,  # Названия всех столбцов
+        'Тип данных': df.dtypes.values,  # Типы данных каждого столбца
+        'Уникальных значений': df.nunique().values,  # Количество уникальных значений
+        'Пропусков': df.isnull().sum().values,  # Количество пропущенных значений
+        '% пропусков': (df.isnull().mean() * 100).round(2).values  # Процент пропусков
     })
     return col_info
 
-# Интерфейс приложения
-st.title("Анализ пассажиров Титаника")
-st.markdown("### Интерактивный дашбоард")
+# ===== СОЗДАНИЕ ИНТЕРФЕЙСА ПРИЛОЖЕНИЯ =====
 
-# Раздел с описательной статистикой
-st.header("1. Описательная статистика данных")
+# Заголовок приложения
+st.title("Анализ пассажиров Титаника")  # Главный заголовок страницы
+st.markdown("### Интерактивный дашбоард")  # Подзаголовок с использованием markdown
 
-# Информация о столбцах
-st.subheader("Подробная информация о столбцах")
-st.dataframe(display_column_info(df))
+# Раздел 1: Описательная статистика
+st.header("1. Описательная статистика данных")  # Заголовок первого раздела
 
-# Расширенная статистика
+# Подраздел с информацией о столбцах
+st.subheader("Подробная информация о столбцах")  # Подзаголовок
+# Отображаем таблицу с метаинформацией о данных
+st.dataframe(display_column_info(df))  # Функция display_column_info возвращает DataFrame
+
+# Подраздел с расширенной статистикой
 st.subheader("Расширенная статистика для числовых столбцов")
+# Метод describe() дает основную статистику, include='all' включает все типы данных
+# .T транспонирует таблицу для удобного отображения
 st.write(df.describe(include='all').T)
 
-# Визуализации
-st.header("2. Визуальный анализ")
+# Раздел 2: Визуализации данных
+st.header("2. Визуальный анализ")  # Заголовок раздела с графиками
 
-# Круговая диаграмма возрастных групп
+# Подраздел с круговой диаграммой возрастных групп
 st.subheader("Соотношение возрастных групп")
+# Считаем количество пассажиров в каждой возрастной группе
 age_counts = df['AgeGroup'].value_counts()
 
+# Создаем фигуру для круговой диаграммы размером 8x8 дюймов
 fig_pie, ax_pie = plt.subplots(figsize=(8, 8))
-ax_pie.pie(age_counts, 
-           labels=age_counts.index, 
-           autopct='%1.1f%%',
-           startangle=90,
-           colors=sns.color_palette('pastel'),
-           wedgeprops={'linewidth': 1, 'edgecolor': 'white'})
+# Строим круговую диаграмму:
+ax_pie.pie(
+    age_counts,  # Данные для отображения
+    labels=age_counts.index,  # Подписи для каждой категории
+    autopct='%1.1f%%',  # Отображение процентов с одним знаком после запятой
+    startangle=90,  # Начальный угол (12 часов)
+    colors=sns.color_palette('pastel'),  # Используем пастельную цветовую палитру
+    wedgeprops={'linewidth': 1, 'edgecolor': 'white'}  # Настройка границ секторов
+)
+# Добавляем заголовок с отступом 20 пунктов
 ax_pie.set_title("Распределение пассажиров по возрастным группам", pad=20)
-ax_pie.axis('equal')  # Чтобы диаграмма была круглой
+# Делаем диаграмму идеально круглой
+ax_pie.axis('equal')
+# Отображаем диаграмму в Streamlit
 st.pyplot(fig_pie)
 
-# График 1: Распределение возрастов
-fig1, ax1 = plt.subplots(figsize=(10, 5))
-sns.histplot(df['Age'].dropna(), bins=20, kde=True, ax=ax1)
+# График 1: Гистограмма распределения возрастов
+fig1, ax1 = plt.subplots(figsize=(10, 5))  # Создаем фигуру 10x5 дюймов
+# Строим гистограмму с ядерной оценкой плотности (KDE)
+sns.histplot(
+    df['Age'].dropna(),  # Используем столбец Age, удаляя пропуски
+    bins=20,  # Количество бинов (столбцов)
+    kde=True,  # Включаем гладкую линию плотности
+    ax=ax1  # Указываем, где строить график
+)
+# Настройка заголовка и подписей осей
 ax1.set_title("Распределение возраста пассажиров", fontsize=14)
 ax1.set_xlabel("Возраст", fontsize=12)
 ax1.set_ylabel("Количество", fontsize=12)
+# Отображаем график
 st.pyplot(fig1)
 
 # График 2: Выживаемость по полу
 st.subheader("Соотношение выживших по полу")
-fig2, ax2 = plt.subplots(figsize=(10, 5))
-sns.countplot(x='Sex', hue='Survived', data=df, ax=ax2, palette='viridis')
+fig2, ax2 = plt.subplots(figsize=(10, 5))  # Создаем фигуру
+# Строим столбчатую диаграмму с группировкой
+sns.countplot(
+    x='Sex',  # Ось X - пол
+    hue='Survived',  # Группировка по выживаемости
+    data=df,  # Используемые данные
+    ax=ax2,  # Указываем ось для построения
+    palette='viridis'  # Цветовая схема
+)
+# Настройка заголовка и подписей
 ax2.set_title("Количество выживших/погибших по полу", fontsize=14)
 ax2.set_xlabel("Пол", fontsize=12)
 ax2.set_ylabel("Количество", fontsize=12)
+# Добавляем легенду
 ax2.legend(["Погиб", "Выжил"], title='Статус')
+# Отображаем график
 st.pyplot(fig2)
 
 # График 3: Стоимость билетов по классам
-fig3, ax3 = plt.subplots(figsize=(10, 5))
-sns.boxplot(x='Pclass', y='Fare', data=df, ax=ax3, palette='coolwarm')
+fig3, ax3 = plt.subplots(figsize=(10, 5))  # Создаем фигуру
+# Строим boxplot (ящик с усами)
+sns.boxplot(
+    x='Pclass',  # Ось X - класс каюты
+    y='Fare',  # Ось Y - стоимость билета
+    data=df,  # Используемые данные
+    ax=ax3,  # Указываем ось
+    palette='coolwarm'  # Цветовая схема
+)
+# Настройка заголовка
 ax3.set_title("Распределение стоимости билетов по классам", fontsize=14)
 ax3.set_xlabel("Класс", fontsize=12)
 ax3.set_ylabel("Стоимость билета", fontsize=12)
+# Отображаем график
 st.pyplot(fig3)
 
-# Интерактивный элемент
-st.header("3. Интерактивный анализ")
+# Раздел 3: Интерактивный анализ
+st.header("3. Интерактивный анализ")  # Заголовок раздела
+# Создаем выпадающий список для выбора класса каюты
 selected_class = st.selectbox(
-    "Выберите класс каюты:",
-    [1, 2, 3],
-    index=0
+    "Выберите класс каюты:",  # Текст подсказки
+    [1, 2, 3],  # Доступные варианты
+    index=0  # Индекс выбранного по умолчанию (первый элемент)
 )
 
+# Фильтруем данные по выбранному классу
 filtered_df = df[df['Pclass'] == selected_class]
+# Выводим заголовок с информацией о выбранном классе
 st.write(f"### Статистика для {selected_class} класса:")
 
 # График 4: Возрастное распределение для выбранного класса
-fig4, ax4 = plt.subplots(figsize=(10, 5))
-sns.histplot(filtered_df['Age'].dropna(), bins=20, kde=True, ax=ax4)
+fig4, ax4 = plt.subplots(figsize=(10, 5))  # Создаем фигуру
+# Строим гистограмму для отфильтрованных данных
+sns.histplot(
+    filtered_df['Age'].dropna(),  # Используем возраст, удаляя пропуски
+    bins=20,  # Количество бинов
+    kde=True,  # Включаем гладкую линию плотности
+    ax=ax4  # Указываем ось
+)
+# Настройка заголовка
 ax4.set_title(f"Распределение возраста (класс {selected_class})", fontsize=14)
 ax4.set_xlabel("Возраст", fontsize=12)
 ax4.set_ylabel("Количество", fontsize=12)
+# Отображаем график
 st.pyplot(fig4)
 
-# Вывод данных
-st.header("4. Просмотр данных")
+# Раздел 4: Просмотр данных
+st.header("4. Просмотр данных")  # Заголовок раздела
+# Создаем слайдер для выбора количества отображаемых строк
 rows_to_show = st.slider(
-    "Количество строк для отображения:",
-    min_value=5,
-    max_value=50,
-    value=10
+    "Количество строк для отображения:",  # Текст подсказки
+    min_value=5,  # Минимальное значение
+    max_value=50,  # Максимальное значение
+    value=10  # Значение по умолчанию
 )
+# Отображаем выбранное количество первых строк таблицы
 st.dataframe(df.head(rows_to_show))
