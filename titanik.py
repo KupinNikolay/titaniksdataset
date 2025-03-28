@@ -12,7 +12,22 @@ def load_data():
 
 df = load_data()
 
-# Функция для красивого отображения информации о столбцах
+# Создание возрастных групп
+def create_age_groups(age):
+    if pd.isnull(age):
+        return 'Неизвестно'
+    elif age < 18:
+        return 'Дети (<18)'
+    elif 18 <= age < 30:
+        return 'Молодые (18-29)'
+    elif 30 <= age < 50:
+        return 'Взрослые (30-49)'
+    else:
+        return 'Пожилые (50+)'
+
+df['AgeGroup'] = df['Age'].apply(create_age_groups)
+
+# Функция для отображения информации о столбцах
 def display_column_info(df):
     col_info = pd.DataFrame({
         'Столбец': df.columns,
@@ -30,36 +45,31 @@ st.markdown("### Интерактивный дашбоард")
 # Раздел с описательной статистикой
 st.header("1. Описательная статистика данных")
 
-# Информация о столбцах - улучшенное отображение
+# Информация о столбцах
 st.subheader("Подробная информация о столбцах")
-col_info = display_column_info(df)
-st.dataframe(col_info)
+st.dataframe(display_column_info(df))
 
-# Расширенная описательная статистика
+# Расширенная статистика
 st.subheader("Расширенная статистика для числовых столбцов")
 st.write(df.describe(include='all').T)
 
-# Категориальная статистика
-st.subheader("Статистика по категориальным признакам")
-categorical_stats = pd.DataFrame({
-    'Столбец': ['Sex', 'Embarked', 'Pclass'],
-    'Мода': [df['Sex'].mode()[0], df['Embarked'].mode()[0], df['Pclass'].mode()[0]],
-    'Количество уникальных': [df['Sex'].nunique(), df['Embarked'].nunique(), df['Pclass'].nunique()]
-})
-st.dataframe(categorical_stats)
-
-# Анализ выживаемости
-st.subheader("Базовая статистика выживаемости")
-survival_stats = df.groupby('Survived').agg({
-    'PassengerId': 'count',
-    'Age': 'mean',
-    'Fare': 'mean'
-}).rename(columns={'PassengerId': 'Количество'})
-survival_stats.index = ['Погиб', 'Выжил']
-st.dataframe(survival_stats)
-
 # Визуализации
 st.header("2. Визуальный анализ")
+
+# Круговая диаграмма возрастных групп
+st.subheader("Соотношение возрастных групп")
+age_counts = df['AgeGroup'].value_counts()
+
+fig_pie, ax_pie = plt.subplots(figsize=(8, 8))
+ax_pie.pie(age_counts, 
+           labels=age_counts.index, 
+           autopct='%1.1f%%',
+           startangle=90,
+           colors=sns.color_palette('pastel'),
+           wedgeprops={'linewidth': 1, 'edgecolor': 'white'})
+ax_pie.set_title("Распределение пассажиров по возрастным группам", pad=20)
+ax_pie.axis('equal')  # Чтобы диаграмма была круглой
+st.pyplot(fig_pie)
 
 # График 1: Распределение возрастов
 fig1, ax1 = plt.subplots(figsize=(10, 5))
@@ -114,14 +124,4 @@ rows_to_show = st.slider(
     max_value=50,
     value=10
 )
-st.dataframe(df.head(rows_to_show).style.highlight_null(color='red'))
-
-# Дополнительная информация
-st.sidebar.header("О дашбоарде")
-st.sidebar.info("""
-Этот дашбоард предоставляет:
-- Детальную информацию о данных
-- Расширенную статистику
-- Визуализации распределений
-- Интерактивный анализ по классам кают
-""")
+st.dataframe(df.head(rows_to_show))
